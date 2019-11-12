@@ -16,9 +16,14 @@ class ProductsController extends Controller
         return $response->withHeader('Content-type', 'application/json');
     }
 
-    public function getProductsList(Request $request, Response $response)
+    public function getProductsList(Request $request, Response $response, array $args)
     {
-        echo $request->getUri()->getQuery();
+        echo "<pre>";
+        var_dump($args);
+        echo "</pre>";
+        echo "<pre>";
+        var_dump($request->getParsedBody());
+        echo "</pre>";
 
         $prodcut = new Products();
         $data = $prodcut->getDate();
