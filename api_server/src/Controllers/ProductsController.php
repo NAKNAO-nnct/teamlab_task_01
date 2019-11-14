@@ -18,19 +18,12 @@ class ProductsController extends Controller
 
     public function getProductsList(Request $request, Response $response, array $args)
     {
-        echo "<pre>";
-        var_dump($args);
-        echo "</pre>";
-        echo "<pre>";
-        var_dump($request->getParsedBody());
-        echo "</pre>";
-
-        $prodcut = new Products();
-        $data = $prodcut->getDate();
+        // $prodcut = new Products();
+        // $data = $this->prodcut->getData();
         $res_json = array(
             'success' => 'success',
             'message' => 'sucess',
-            "details" => $data,
+            "details" => $this->data,
             "details_url" => "https://example.jp/response"
         );
 
@@ -39,8 +32,8 @@ class ProductsController extends Controller
 
     public function getProduct(Request $request, Response $response, array $args)
     {
-        $prodcut = new Products();
-        $data = $prodcut->getDate();
+        // $prodcut = new Products();
+        // $data = $prodcut->getData();
         $keys = (int) $args['id'];
         $res_json = array(
             'success' => '',
@@ -49,7 +42,7 @@ class ProductsController extends Controller
             "details_url" => "https://example.jp/response"
         );
 
-        foreach ($data as $key => $value) {
+        foreach ($this->data as $key => $value) {
             if (strcmp($value["id"], $keys) == 0) {
                 $res_json['details'][0] = $value;
                 break;
@@ -65,5 +58,29 @@ class ProductsController extends Controller
         }
 
         return $this->displayJson($request, $response, $res_json);
+    }
+
+    // 商品の登録
+    public function addProduct(Request $request, Response $response, array $args)
+    {
+        $next_id = count($this->data) + 1;
+        // $res_json_str = json_encode($request->getParsedBody(), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+        $res_json_str = json_decode(json_encode($request->getParsedBody()), TRUE);
+        // $add_data = "
+        // {
+        //     'id': {$next_id},
+        //     'name': ,
+        //     'description': '東京で開かれた時用のチケット．東京で開かれる可能性は果てしなく小さい',
+        //     'image': '/images/02.png',
+        //     'price': '15000'
+        // }";
+
+        $res_json_str['id'] = $next_id;
+        $this->data[$next_id - 1] = $res_json_str;
+        $this->prodcut->addData();
+
+
+        // echo $next_id;
+        return $this->displayJson($request, $response, $this->data);
     }
 }
