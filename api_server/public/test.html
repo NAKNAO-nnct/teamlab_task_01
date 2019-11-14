@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>POST</title>
+    <script
+      type="text/javascript"
+      src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"
+    ></script>
+
+    <script type="text/javascript">
+      $(function() {
+        $("#response").html("Response Values");
+
+        $("#button").click(function() {
+          var url = $("#url_post").val();
+
+          var method = $("#method").val();
+
+          var key = $("#k1").val();
+          if ($("#format").val() == "json") {
+            postdata = "";
+            if (key != "") {
+              var JSONdata = new Object(100);
+              JSONdata[key] = $("#v1").val();
+              postdata = JSON.stringify(JSONdata);
+            }
+            type = "application/json";
+          } else {
+            postdata = "";
+            if (key != "") {
+              postdata = key + "=" + $("#v1").val();
+            }
+            type = "text/plain";
+          }
+          $.ajax({
+            type: method,
+            url: url,
+            data: postdata,
+            contentType: type,
+            scriptCharset: "utf-8"
+          })
+            .done(data => {
+              // Successs
+              $("#response").html(JSON.stringify(data, null, "    "));
+            })
+            .fail(data => {
+              // Error
+              alert("error");
+              $("#response").html(JSON.stringify(data, null, "    "));
+            })
+            .always(data => {});
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <h1>APIテスト</h1>
+    <p>
+      URL:
+      <input
+        type="text"
+        id="url_post"
+        name="url"
+        size="100"
+        value="http://localhost:8080/api/products/2"
+      />
+    </p>
+
+    <select id="method">
+      <option value="GET">GET</option>
+      <option value="POST">POST</option>
+      <option value="PUT">PUT</option>
+      <option value="DELETE">DELETE</option>
+    </select>
+
+    <select id="format">
+      <option value="json">json</option>
+      <option value="text">text</option>
+    </select>
+    <table>
+      <thead>
+        <tr>
+          <th>key</th>
+          <th>value</th>
+        </tr>
+        <tr>
+          <td><input type="text" id="k1" size="30" value="" /></td>
+          <td><input type="text" id="v1" size="30" value="" /></td>
+        </tr>
+        <tr>
+          <td><input type="text" id="k2" size="30" value="" /></td>
+          <td><input type="text" id="v2" size="30" value="" /></td>
+        </tr>
+        <tr>
+          <td><input type="text" id="k3" size="30" value="" /></td>
+          <td><input type="text" id="v3" size="30" value="" /></td>
+        </tr>
+        <tr>
+          <td><input type="text" id="k4" size="30" value="" /></td>
+          <td><input type="text" id="v4" size="30" value="" /></td>
+        </tr>
+        <tr>
+          <td><input type="text" id="k5" size="30" value="" /></td>
+          <td><input type="text" id="v5" size="30" value="" /></td>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <p><button id="button" type="button">submit</button></p>
+    <textarea id="response" rows="100" style="width:100%;" readonly></textarea>
+  </body>
+</html>
