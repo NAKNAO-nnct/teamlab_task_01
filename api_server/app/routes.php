@@ -12,6 +12,11 @@ use Slim\App;
 use Slim\Interfaces\RouteCollectorProxyInterface as Group;
 
 return function (App $app) {
+    // jsonとか受け取れるようにする
+    $app->addBodyParsingMiddleware();
+    $app->addRoutingMiddleware();
+    $app->addErrorMiddleware(true, true, true);
+
     $app->get('/', function (Request $request, Response $response) {
         $response->getBody()->write('Hello world!');
         return $response;
@@ -22,7 +27,9 @@ return function (App $app) {
     //     $group->get('/{id}', ViewUserAction::class);
     // });
 
-    $app->group('/api/products', function (Group $group) {
+
+    $app->group('/api/products', function (Group $group) use ($app) {
+
         // 取得
         $group->get('/{id}', ProductsController::class . ':getProduct');
 
@@ -30,8 +37,15 @@ return function (App $app) {
         $group->get('', ProductsController::class . ':getProductsList');
 
         // 登録
-        $group->post('', ProductsController::class . ':getProductsList');
-        $group->post('/{id}', function (Request $request, Response $response, array $args) { });
+        // $group->post('', ProductsController::class . ':getProductsList');
+        // $group->post('', function (Request $request, Response $response, array $args) {
+        //     $res_json_str = json_encode($request->getParsedBody(), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+        //     $response->getBody()->write($res_json_str);
+        //     $response->withHeader("Content-Type", "application/json; charset=UTF-8");
+        //     return $response;
+        // });
+
+        $group->post('', ProductsController::class . ':addProduct');
 
         // 更新
         $group->put('/{id}', function (Request $request, Response $response, $id) { });
