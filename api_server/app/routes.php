@@ -51,10 +51,6 @@ return function (App $app) {
         $group->put('/{id}', function (Request $request, Response $response, $id) { });
 
         // 削除
-        $group->delete('/{id}', function (Request $request, Response $response, $id) { });
-    });
-
-    $app->get('/images/{name}', function (Response $response, $name) {
-        return $response->withHeader('Content-type', 'image/' . $type);
+        $group->delete('/{id}', ProductsController::class . ':deleteProduct');
     });
 };

@@ -1,62 +1,62 @@
 [
     {
-        "id": "1",
+        "id": 1,
         "name": "もしもしボックス",
         "description": "「もしもし，〇〇です．」を永遠と流し続ける箱．受話器の横においておくだけで電話相手を撃退できる．",
         "image": "\/images\/01.png",
         "price": "1000"
     },
     {
-        "id": "2",
+        "id": 2,
         "name": "どこだろドア",
         "description": "ドアを開けたら宇宙の中のどこかに繋がる．戻ってくることはできない．２２世紀からの輸入品．保証対象外．",
         "image": "\/images\/02.png",
         "price": "15000"
     },
     {
-        "id": "3",
+        "id": 3,
         "name": "どこまでもドア",
         "description": "いつになってもポケットから出し切ることができないドア．なお，戻せない．",
         "image": "\/images\/03.png",
         "price": "30000"
     },
     {
-        "id": "4",
+        "id": 4,
         "name": "竹ヘリコプター",
         "description": "竹でできたヘリコプター．動作保証外",
         "image": "\/images\/04.png",
         "price": ""
     },
     {
-        "id": "5",
+        "id": 5,
         "name": "南京パン",
         "description": "",
         "image": "\/images\/02.png",
         "price": "15000"
     },
     {
-        "id": "6",
+        "id": 6,
         "name": "小百合",
         "description": "科学的に貴重な写真集．",
         "image": "\/images\/02.png",
         "price": "15000"
     },
     {
-        "id": "7",
+        "id": 7,
         "name": "かぶる傘",
         "description": "周りにものすごく迷惑をかける傘．",
         "image": "\/images\/02.png",
         "price": "15000"
     },
     {
-        "id": "8",
+        "id": 8,
         "name": "桜を見る会特別チケット",
         "description": "大阪城で開かれる沖縄県知事主催の桜を見る会の特別チケット．払い戻し不可",
         "image": "\/images\/02.png",
         "price": "15000"
     },
     {
-        "id": "9",
+        "id": 9,
         "name": "東京オリンピックマラソンチケット（東京）",
         "description": "東京で開かれた時用のチケット．東京で開かれる可能性は果てしなく小さい",
         "image": "\/images\/02.png",
