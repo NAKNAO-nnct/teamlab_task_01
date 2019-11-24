@@ -137,9 +137,6 @@ class ProductsController extends Controller
             $res_json = $this->generateResponse('failure', 'error: 指定されたidの商品はありませんでした', '');
         }
 
-
-
-
         return $this->displayJson($request, $response, $res_json);
     }
 }

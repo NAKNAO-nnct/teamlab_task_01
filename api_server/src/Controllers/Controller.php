@@ -18,3 +18,4 @@ abstract class Controller
         $this->data = $this->prodcut->getData();
     }
 }
+
