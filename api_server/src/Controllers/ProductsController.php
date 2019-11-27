@@ -107,6 +107,13 @@ class ProductsController extends Controller
         return $this->displayJson($request, $response, $res_json);
     }
 
+    // idの商品の情報を更新
+    public function updateProduct(Request $request, Response $response, array $args)
+    {
+        // queryからidを取得
+        $id = (int) $args['id'];
+    }
+
     // idの商品を削除
     public function deleteProduct(Request $request, Response $response, array $args)
     {
@@ -138,5 +145,15 @@ class ProductsController extends Controller
         }
 
         return $this->displayJson($request, $response, $res_json);
+    }
+
+    // queryチェック
+    public function queryCheck($query, $method)
+    {
+
+        switch ($method) {
+            case "GET":
+                return false;
+        }
     }
 }

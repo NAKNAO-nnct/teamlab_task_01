@@ -48,7 +48,7 @@ return function (App $app) {
         $group->post('', ProductsController::class . ':addProduct');
 
         // 更新
-        $group->put('/{id}', function (Request $request, Response $response, $id) { });
+        $group->put('/{id}', ProductsController::class . ':updateProduct');
 
         // 削除
         $group->delete('/{id}', ProductsController::class . ':deleteProduct');
