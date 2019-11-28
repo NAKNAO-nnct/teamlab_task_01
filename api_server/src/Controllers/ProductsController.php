@@ -5,6 +5,7 @@ namespace App\Controllers;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use App\Models\Products;
+use phpDocumentor\Reflection\Types\Null_;
 
 class ProductsController extends Controller
 {
@@ -30,10 +31,59 @@ class ProductsController extends Controller
         return $res_json;
     }
 
+    // 商品を検索
+    public function searchProduct(Request $request, Response $response, array $args)
+    {
+        $get_query = $request->getQueryParams();
+        if (count($get_query) == 0) {
+            return $this->getProductsList($request, $response, $args);
+        }
+
+        $all_product_data = $this->prodcut->getData();
+
+        // 該当データ
+        $target_key = [];
+
+        // 探索
+        foreach ($all_product_data as $count => $product) {
+            // 名前
+            if (array_key_exists('name', $get_query)) {
+                if (strpos($product['name'], $get_query['name']) !== false) {
+                    array_push($target_key, $product['id']);
+                }
+            }
+
+            // 価格上限と下限の両方がある
+            if ((array_key_exists('min_price', $get_query)) and (array_key_exists('max_price', $get_query))) {
+                if (((int) $product['price'] <= (int) $get_query['max_price']) and ((int) $product['price'] >= (int) $get_query['max_price'])) {
+                    array_push($target_key, $product['id']);
+                }
+            }
+
+            // 価格上限のみ
+            else if (array_key_exists('max_price', $get_query)) {
+                if ((int) $product['price'] <= (int) $get_query['max_price']) {
+                    array_push($target_key, $product['id']);
+                }
+            }
+
+            // 価格下限のみ
+            else if (array_key_exists('min_price', $get_query)) {
+                if ((int) $product['price'] >= (int) $get_query['min_price']) {
+                    array_push($target_key, $product['id']);
+                }
+            }
+        }
+
+        // $target_key = array_unique($target_key);
+
+        var_dump($target_key);
+    }
+
     // 商品リストを取得
     public function getProductsList(Request $request, Response $response, array $args)
     {
-        $res_json = $this->generateResponse('sccess', 'success', $this->data);
+        $res_json = $this->generateResponse('sccess', 'success', $this->prodcut->getData());
 
         return $this->displayJson($request, $response, $res_json);
     }
@@ -45,15 +95,9 @@ class ProductsController extends Controller
         $keys = (int) $args['id'];
         $details = [];
 
-        // idの商品を取得
-        foreach ($this->data as $key => $value) {
-            if (strcmp($value["id"], $keys) == 0) {
-                $details[0] = $value;
-                break;
-            }
-        }
+        $details[0] = $this->getProductFromId([$keys])['value'];
 
-        if ($details == []) {
+        if ($details[0][0] == "") {
             $res_json = $this->generateResponse('failure', 'error: No such product_id', '');
         } else {
             $res_json = $this->generateResponse('sucess', 'sucess', $details);
@@ -74,24 +118,16 @@ class ProductsController extends Controller
         /* 
             ここでqueryチャックを行う
         */
-
-        // base64データから画像ファイル化
-        // base64デコード
-        $images_base64 = base64_decode(explode(",", $res_json_str["image"])[1]);
-
-        // ファイル種類から拡張子を取得
-        $extension = explode("/", finfo_buffer(finfo_open(), $images_base64, FILEINFO_EXTENSION))[0];
-        /* エラーチェックが必要*/
-
-        // ファイル名（id.拡張子）
-        $save_file_name = "${next_id}.${extension}";
-
-        // 保存パス
-        $res_json_str["image"] = "/images/${save_file_name}";
+        // 画像を保存
+        $res_save_image = $this->saveProductImages($res_json_str["image"], $next_id);
 
         // ファイルの保存
         // 成功しなかった場合errorを返す
-        if (file_put_contents(__DIR__ . "/../../public/images/${save_file_name}", $images_base64) != False) {
+        if ($res_save_image['ok'] != False) {
+
+            // 保存パス
+            $res_json_str["image"] = "/images/" . $res_save_image['save_path'];
+
             // post queryにidを追加してDBに保存する
             $res_json_str['id'] = $next_id;
             $insert_data = $this->data;
@@ -112,6 +148,54 @@ class ProductsController extends Controller
     {
         // queryからidを取得
         $id = (int) $args['id'];
+
+        // get request body
+        $res_json_str = json_decode(json_encode($request->getParsedBody()), TRUE);
+
+        /* 
+            query check
+        */
+
+        // 変更元データの取得
+        $old_data = $this->getProductFromId([$id]);
+
+        // idの商品の有無
+        if ($old_data['value'][0] == "") {
+            $res_json = $this->generateResponse('failure', 'error: No such product_id', '');
+        } else {
+            // 更新したいデータのみ送られてくる
+            foreach ($res_json_str as $key => $value) {
+                if ($value != "") {
+                    // 画像を更新する場合，元の画像を削除
+                    if (strcmp($key, 'image') == 0) {
+                        if (strcmp($this->deleteProductImages($old_data['value'][0]['image'])['ok'], 'success') != 0) {
+                            $res_json = $this->generateResponse('failure', 'error: image file error', '');
+                            continue;
+                        }
+                        // 画像を保存
+                        $res_save_image = $this->saveProductImages($value, $id);
+                        if ($res_save_image['ok'] != False) {
+                            $old_data['value'][0][$key] = $res_save_image['save_path'];
+                            continue;
+                        }
+                    }
+
+                    // 情報を上書き
+                    $old_data['value'][0][$key] = $value;
+                }
+            }
+
+            $res_data = $this->prodcut->getData();
+            $res_data[$old_data['key']] = $old_data['value'][0];
+
+            // データを更新
+            $this->prodcut->setData($res_data);
+
+            $res_json = $this->generateResponse('sucess', 'sucess', $old_data['value']);
+        }
+
+        // var_dump($old_data);
+        return $this->displayJson($request, $response, $res_json);
     }
 
     // idの商品を削除
@@ -127,6 +211,12 @@ class ProductsController extends Controller
         // 削除処理
         foreach ($data as $key => $value) {
             if (strcmp($value["id"], $id) == 0) {
+                // 画像ファイルの削除
+                if ($this->deleteProductImages($value['image'])['ok'] != 'success') {
+                    $res_json = $this->generateResponse('failure', 'error: 削除に失敗しました', '');
+                    break;
+                }
+
                 // 削除
                 unset($data[$key]);
 
@@ -148,12 +238,70 @@ class ProductsController extends Controller
     }
 
     // queryチェック
-    public function queryCheck($query, $method)
+    public function queryCheck($query)
     {
 
-        switch ($method) {
-            case "GET":
+        switch ($query['type']) {
+            case "resgister":
                 return false;
         }
+    }
+
+    // idから商品を取得する
+    public function getProductFromId($ids)
+    {
+        $data = $this->prodcut->getData();
+
+        $res_data = [];
+
+        // idの商品を取得
+        foreach ($ids as $id) {
+            foreach ($data as $key => $value) {
+                if (strcmp($value["id"], $id) == 0) {
+                    array_push($res_data, $value);
+                }
+            }
+        }
+        if (count($res_data) != 0) {
+            return array('value' => $res_data, 'key' => $key);
+        }
+        return;
+    }
+
+    // 画像を削除
+    public function deleteProductImages($file_name)
+    {
+        $file_path = __DIR__ . "/../../public/" . $file_name;
+
+        // ファイルの有無を確認
+        if (file_exists($file_path) == False) {
+            return array('ok' => 'success', 'message' => 'file not found');
+        }
+        // ファイルを削除
+        if (unlink($file_path))
+            return array('ok' => 'success', 'message' => '');
+        return array('ok' => 'failure', 'message' => '削除に失敗しました');
+    }
+
+    // 画像を保存
+    public function saveProductImages($images_base64, $id)
+    {
+        // base64データから画像ファイル化
+        // base64デコード
+        $images_base64 = base64_decode(explode(",", $images_base64)[1]);
+
+        // ファイル種類から拡張子を取得
+        $extension = explode("/", finfo_buffer(finfo_open(), $images_base64, FILEINFO_EXTENSION))[0];
+        /* エラーチェックが必要*/
+
+        // ファイル名（id.拡張子）
+        $save_file_name = "${id}.${extension}";
+
+        // ファイルの保存
+        // 成功しなかった場合errorを返す
+        if (file_put_contents(__DIR__ . "/../../public/images/${save_file_name}", $images_base64)) {
+            return array('ok' => True, 'save_path' => "/images/${save_file_name}");
+        }
+        return array('ok' => False);
     }
 }

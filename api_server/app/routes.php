@@ -29,6 +29,8 @@ return function (App $app) {
 
 
     $app->group('/api/products', function (Group $group) use ($app) {
+        // テストリンク
+        $group->get('/test', ProductsController::class . ':searchProduct');
 
         // 取得
         $group->get('/{id}', ProductsController::class . ':getProduct');
@@ -37,14 +39,6 @@ return function (App $app) {
         $group->get('', ProductsController::class . ':getProductsList');
 
         // 登録
-        // $group->post('', ProductsController::class . ':getProductsList');
-        // $group->post('', function (Request $request, Response $response, array $args) {
-        //     $res_json_str = json_encode($request->getParsedBody(), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
-        //     $response->getBody()->write($res_json_str);
-        //     $response->withHeader("Content-Type", "application/json; charset=UTF-8");
-        //     return $response;
-        // });
-
         $group->post('', ProductsController::class . ':addProduct');
 
         // 更新
