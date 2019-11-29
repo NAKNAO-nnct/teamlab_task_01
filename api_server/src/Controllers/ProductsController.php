@@ -42,42 +42,66 @@ class ProductsController extends Controller
         $all_product_data = $this->prodcut->getData();
 
         // 該当データ
-        $target_key = [];
+        $target_key = $this->getProductId();
+        // $target_keys = [];
+
 
         // 探索
         foreach ($all_product_data as $count => $product) {
             // 名前
             if (array_key_exists('name', $get_query)) {
                 if (strpos($product['name'], $get_query['name']) !== false) {
-                    array_push($target_key, $product['id']);
+                    $target_key = array_intersect($target_key, [(int) $product['id']]);
                 }
             }
 
             // 価格上限と下限の両方がある
-            if ((array_key_exists('min_price', $get_query)) and (array_key_exists('max_price', $get_query))) {
-                if (((int) $product['price'] <= (int) $get_query['max_price']) and ((int) $product['price'] >= (int) $get_query['max_price'])) {
-                    array_push($target_key, $product['id']);
-                }
-            }
+            // if ((array_key_exists('min_price', $get_query)) and (array_key_exists('max_price', $get_query))) {
+            //     if (((int) $product['price'] <= (int) $get_query['max_price']) and ((int) $product['price'] >= (int) $get_query['min_price'])) {
+            //         $target_key = array_intersect($target_key, [$product['id']]);
+            //     }
+            // }
 
             // 価格上限のみ
-            else if (array_key_exists('max_price', $get_query)) {
+            if (array_key_exists('max_price', $get_query)) {
                 if ((int) $product['price'] <= (int) $get_query['max_price']) {
-                    array_push($target_key, $product['id']);
+                    $target_key = array_intersect($target_key, [(int) $product['id']]);
                 }
             }
 
             // 価格下限のみ
-            else if (array_key_exists('min_price', $get_query)) {
+            if (array_key_exists('min_price', $get_query)) {
                 if ((int) $product['price'] >= (int) $get_query['min_price']) {
-                    array_push($target_key, $product['id']);
+                    $target_key = array_intersect($target_key, [(int) $product['id']]);
+                    echo "<pre>";
+                    var_dump($product['id']);
+                    echo "</pre>";
                 }
             }
         }
 
-        // $target_key = array_unique($target_key);
+        // 探索
+        // foreach ($all_product_data as $count => $product) {
+        //     // 名前
+        //     if (array_key_exists('name', $get_query)) {
+        //         if (strpos($product['name'], $get_query['name']) !== false) {
+        //             $target_key = array_intersect($target_key, [$product['id']]);
+        //         }
+        //     }
+        // }
 
-        var_dump($target_key);
+
+        $target_keys = array_unique($target_key);
+
+        $details = $this->getProductFromId($target_keys)['value'];
+
+        if ($details[0] == "") {
+            $res_json = $this->generateResponse('failure', 'error: No such product_id', '');
+        } else {
+            $res_json = $this->generateResponse('sucess', 'sucess', $details);
+        }
+
+        return $this->displayJson($request, $response, $res_json);
     }
 
     // 商品リストを取得
@@ -118,6 +142,7 @@ class ProductsController extends Controller
         /* 
             ここでqueryチャックを行う
         */
+
         // 画像を保存
         $res_save_image = $this->saveProductImages($res_json_str["image"], $next_id);
 
@@ -303,5 +328,18 @@ class ProductsController extends Controller
             return array('ok' => True, 'save_path' => "/images/${save_file_name}");
         }
         return array('ok' => False);
+    }
+
+    // 商品のidリストを取得する
+    public function getProductId()
+    {
+        $products = $this->prodcut->getData();
+        $products_id = [];
+
+        foreach ($products as  $value) {
+            array_push($products_id, (int) $value['id']);
+        }
+
+        return $products_id;
     }
 }

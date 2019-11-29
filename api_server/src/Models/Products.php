@@ -34,15 +34,39 @@ class Products
     }
 }
 
-//  test
-// $na = new Products();
-// $da = $na->getData();
-// $at = array(
-//     "10" => array(
-//         "name" => "bokete"
-//     )
-// );
-// $at = array_merge($da, array("11" => array("name" => "gomi")));
-// var_dump($at);
-// echo "\n";
-// $na->addData($at);
+class DBConnector
+{
+    // コネクタ
+    private $db_connector;
+
+    // コネクタを開いてぶち込む
+    public function __construct($dbpath)
+    {
+        // DBファイルがなければテーブルを作る
+        if (!file_exists(__DIR__ . $dbpath)) {
+            $this->db_connector = sqlite_open($dbpath, 0666, $sqliteerror);
+            $sql = '
+                CREATE TABLE `Products` (
+                    `id`	INTEGER NOT NULL,
+                    `name`	TEXT NOT NULL UNIQUE,
+                    `description`	TEXT,
+                    `image_path`	TEXT NOT NULL,
+                    `price`	INTEGER NOT NULL
+                );
+            ';
+
+            $result_flag = sqlite_query($this->db_connector, $sql, SQLITE_BOTH, $sqliteerror);
+        } else {
+            $this->db_connector = sqlite_open($dbpath, 0666, $sqliteerror);
+        }
+    }
+
+    // コネクタを閉じる
+    function __destruct()
+    {
+        sqlite_close($this->db_connector);
+    }
+}
+
+// test
+$db = DBConnector('/db/db.db');
