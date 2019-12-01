@@ -50,40 +50,62 @@ class DBConnector
             try {
                 $options = array(\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION);
                 // $dbh = new PDO('sqlite:test.db', '', '', $options);
-                $dbh = new \PDO('sqlite:' . __DIR__ . $dbpath, '', '', $options);
+                $this->db_connector = new \PDO('sqlite:' . __DIR__ . $dbpath, '', '', $options);
+                $this->db_connector->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
             } catch (PDOException $e) {
                 echo 'Connection failed: ' . $e->getMessage();
                 exit;
             }
             try {
-                $sql = '
-                CREATE TABLE `Products` (
-                    `id`	INTEGER NOT NULL,
-                    `name`	TEXT NOT NULL UNIQUE,
-                    `description`	TEXT,
-                    `image_path`	TEXT NOT NULL,
-                    `price`	INTEGER NOT NULL
-                );
-            ';
-                $dbh->query($sql);
+
+                $sql = explode(';', file_get_contents(__DIR__ . '/db/init.sql'));
+
+                foreach($sql as $init_query){
+                    $this->db_connector->query($init_query.';');
+                }
             } catch (PDOException $e) {
                 echo 'Error: ' . $e->getMessage();
                 exit;
             }
         }
-        // else {
-        //     // print(__DIR__ . $dbpath);
-        //     try {
-        //         $options = array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
-        //         $dbh = new PDO('sqlite:test.db', '', '', $options);
-        //     } catch (PDOException $e) {
-        //         echo 'Connection failed: ' . $e->getMessage();
-        //         exit;
-        //     }
-        //     // $this->db_connector = sqlite_open(__DIR__ . $dbpath, 0666, $sqliteerror);
-        // }
+        else {
+            // print(__DIR__ . $dbpath);
+            try {
+                $options = array(\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION);
+                $this->db_connector = new \PDO('sqlite:' . __DIR__ . $dbpath, '', '', $options);
+            } catch (PDOException $e) {
+                echo 'Connection failed: ' . $e->getMessage();
+                exit;
+            }
+        }
     }
+
+    // 取得系クエリ
+    public function getQuery($sql_query){
+        $stmt = $this->db_connector->query($sql_query);
+        $rows = array();
+        $count = 0;
+        foreach ($stmt as $row) {
+            $rows[] = $this->formatResult($row);
+        }
+        $stmt->closeCursor();
+        return $rows;
+    }
+
+    // 結果クエリ整形
+    public function formatResult($result) {
+        $rows = array(
+            'id'=> $result['id'],
+            'name'=>$result['name'],
+            'description'=>$result['description'],
+            'image_path'=>$result['image_path'],
+            'price' => $result['price']
+        );
+        return $rows;
+    }
+
 }
 
 // test
-$db = new DBConnector('/db/db2.db');
+$db = new DBConnector('/db/db.db');
+print_r($db->getQuery('SELECT * from Products;'));

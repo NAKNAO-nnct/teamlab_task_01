@@ -11,11 +11,13 @@ use App\Models\Products;
 abstract class Controller
 {
     public $prodcut;
+    public $db;
     public $data;
     public function __construct()
     {
         $this->prodcut = new Products();
         $this->data = $this->prodcut->getData();
+        $this->db = new DBConnector('/db/db.db');
     }
 }
 
