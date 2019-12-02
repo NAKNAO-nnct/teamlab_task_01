@@ -4,8 +4,8 @@ namespace App\Controllers;
 
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use App\Models\Products;
 use phpDocumentor\Reflection\Types\Null_;
+use TheSeer\Tokenizer\Exception;
 
 class ProductsController extends Controller
 {
@@ -39,64 +39,11 @@ class ProductsController extends Controller
             return $this->getProductsList($request, $response, $args);
         }
 
-        $all_product_data = $this->prodcut->getData();
-
         // 該当データ
-        $target_key = $this->getProductId();
-        // $target_keys = [];
+        $details = $this->db_access_conector->searchData($get_query);
 
-
-        // 探索
-        foreach ($all_product_data as $count => $product) {
-            // 名前
-            if (array_key_exists('name', $get_query)) {
-                if (strpos($product['name'], $get_query['name']) !== false) {
-                    $target_key = array_intersect($target_key, [(int) $product['id']]);
-                }
-            }
-
-            // 価格上限と下限の両方がある
-            // if ((array_key_exists('min_price', $get_query)) and (array_key_exists('max_price', $get_query))) {
-            //     if (((int) $product['price'] <= (int) $get_query['max_price']) and ((int) $product['price'] >= (int) $get_query['min_price'])) {
-            //         $target_key = array_intersect($target_key, [$product['id']]);
-            //     }
-            // }
-
-            // 価格上限のみ
-            if (array_key_exists('max_price', $get_query)) {
-                if ((int) $product['price'] <= (int) $get_query['max_price']) {
-                    $target_key = array_intersect($target_key, [(int) $product['id']]);
-                }
-            }
-
-            // 価格下限のみ
-            if (array_key_exists('min_price', $get_query)) {
-                if ((int) $product['price'] >= (int) $get_query['min_price']) {
-                    $target_key = array_intersect($target_key, [(int) $product['id']]);
-                    echo "<pre>";
-                    var_dump($product['id']);
-                    echo "</pre>";
-                }
-            }
-        }
-
-        // 探索
-        // foreach ($all_product_data as $count => $product) {
-        //     // 名前
-        //     if (array_key_exists('name', $get_query)) {
-        //         if (strpos($product['name'], $get_query['name']) !== false) {
-        //             $target_key = array_intersect($target_key, [$product['id']]);
-        //         }
-        //     }
-        // }
-
-
-        $target_keys = array_unique($target_key);
-
-        $details = $this->getProductFromId($target_keys)['value'];
-
-        if ($details[0] == "") {
-            $res_json = $this->generateResponse('failure', 'error: No such product_id', '');
+        if (empty($details)) {
+            $res_json = $this->generateResponse('failure', 'error: No such product', '');
         } else {
             $res_json = $this->generateResponse('sucess', 'sucess', $details);
         }
@@ -107,7 +54,7 @@ class ProductsController extends Controller
     // 商品リストを取得
     public function getProductsList(Request $request, Response $response, array $args)
     {
-        $res_json = $this->generateResponse('sccess', 'success', $this->prodcut->getData());
+        $res_json = $this->generateResponse('sccess', 'success', $this->db_access_conector->getAllData());
 
         return $this->displayJson($request, $response, $res_json);
     }
@@ -134,36 +81,37 @@ class ProductsController extends Controller
     public function addProduct(Request $request, Response $response, array $args)
     {
         // idの生成
-        $next_id = count($this->data) + 1;
+        $next_id = count($this->db_access_conector->getAllData()) + 1;
 
         // post queryを取得
         $res_json_str = json_decode(json_encode($request->getParsedBody()), TRUE);
 
-        /* 
-            ここでqueryチャックを行う
-        */
+        try {
+            // queryチェック
+            if (!$this->queryCheck($res_json_str))
+                throw new Exception('パラメータが不十分です．');
 
-        // 画像を保存
-        $res_save_image = $this->saveProductImages($res_json_str["image"], $next_id);
+            // 画像を保存
+            $res_save_image = $this->saveProductImages($res_json_str["image"], $next_id);
 
-        // ファイルの保存
-        // 成功しなかった場合errorを返す
-        if ($res_save_image['ok'] != False) {
+            // ファイルの保存
+            // 成功しなかった場合errorを返す
+            if ($res_save_image['ok'] != False) {
 
-            // 保存パス
-            $res_json_str["image"] = "/images/" . $res_save_image['save_path'];
+                // 保存パス
+                $res_json_str["image"] = "/images/" . $res_save_image['save_path'];
 
-            // post queryにidを追加してDBに保存する
-            $res_json_str['id'] = $next_id;
-            $insert_data = $this->data;
-            $insert_data[$next_id - 1] = $res_json_str;
+                // dbに追加
+                $res_json_str['id'] = $next_id;
+                $this->db_access_conector->insertQuery($res_json_str);
 
-            $this->prodcut->setData($insert_data);
-
-            $res_json = $this->generateResponse('sucess', 'sucess', $res_json_str);
-        } else {
-            $res_json = $this->generateResponse('failure', 'error: 画像ファイルを保存できませんでした', '');
+                $res_json = $this->generateResponse('sucess', 'sucess', $res_json_str);
+            } else
+                throw new Exception('画像ファイルを保存できませんでした');
+        } catch (Exception $e) {
+            $res_json = $this->generateResponse('failure', 'error: ' . $e->getMessage(), '');
         }
+
 
         return $this->displayJson($request, $response, $res_json);
     }
@@ -180,44 +128,49 @@ class ProductsController extends Controller
         /* 
             query check
         */
+        try {
+            // queryチェック
+            if (!$this->queryCheck($res_json_str))
+                throw new Exception('パラメータが不十分です．');
+            // 変更元データの取得
+            $old_data = $this->getProductFromId([$id]);
 
-        // 変更元データの取得
-        $old_data = $this->getProductFromId([$id]);
+            // idの商品の有無
+            if ($old_data['value'][0] == "")
+                throw new Exception('No such product_id');
+            else {
+                // 更新したいデータのみ送られてくる
+                foreach ($res_json_str as $key => $value) {
+                    if ($value != "") {
+                        // 画像を更新する場合，元の画像を削除
+                        if (strcmp($key, 'image') == 0) {
+                            if (strcmp($this->deleteProductImages($old_data['value'][0]['image'])['ok'], 'success') != 0) {
+                                // $res_json = $this->generateResponse('failure', 'error: image file error', '');
+                                continue;
+                            }
+                            // 画像を保存
+                            $res_save_image = $this->saveProductImages($value, $id);
+                            if (!$res_save_image['ok']) {
+                                $old_data['value'][0][$key] = $res_save_image['save_path'];
+                                continue;
+                            } else
+                                throw new Exception('ファイルを保存できませんでした');
+                        }
 
-        // idの商品の有無
-        if ($old_data['value'][0] == "") {
-            $res_json = $this->generateResponse('failure', 'error: No such product_id', '');
-        } else {
-            // 更新したいデータのみ送られてくる
-            foreach ($res_json_str as $key => $value) {
-                if ($value != "") {
-                    // 画像を更新する場合，元の画像を削除
-                    if (strcmp($key, 'image') == 0) {
-                        if (strcmp($this->deleteProductImages($old_data['value'][0]['image'])['ok'], 'success') != 0) {
-                            $res_json = $this->generateResponse('failure', 'error: image file error', '');
-                            continue;
-                        }
-                        // 画像を保存
-                        $res_save_image = $this->saveProductImages($value, $id);
-                        if ($res_save_image['ok'] != False) {
-                            $old_data['value'][0][$key] = $res_save_image['save_path'];
-                            continue;
-                        }
+                        // 情報を上書き
+                        $old_data['value'][0][$key] = $value;
                     }
-
-                    // 情報を上書き
-                    $old_data['value'][0][$key] = $value;
                 }
+
+                // データを更新
+                $this->db_access_conector->updateQuery($old_data['value'][0]);
+
+                $res_json = $this->generateResponse('sucess', 'sucess', $old_data['value']);
             }
-
-            $res_data = $this->prodcut->getData();
-            $res_data[$old_data['key']] = $old_data['value'][0];
-
-            // データを更新
-            $this->prodcut->setData($res_data);
-
-            $res_json = $this->generateResponse('sucess', 'sucess', $old_data['value']);
+        } catch (Exception $e) {
+            $res_json = $this->generateResponse('failure', 'error: ' . $e->getMessage(), '');
         }
+
 
         // var_dump($old_data);
         return $this->displayJson($request, $response, $res_json);
@@ -229,34 +182,19 @@ class ProductsController extends Controller
         // queryからkeyを取得
         $id = (int) $args['id'];
 
-        $data = $this->prodcut->getData();
+        $data = $this->db_access_conector->getDataFromIds([$id]);
 
         $res_json = "";
 
         // 削除処理
-        foreach ($data as $key => $value) {
-            if (strcmp($value["id"], $id) == 0) {
-                // 画像ファイルの削除
-                if ($this->deleteProductImages($value['image'])['ok'] != 'success') {
-                    $res_json = $this->generateResponse('failure', 'error: 削除に失敗しました', '');
-                    break;
-                }
-
-                // 削除
-                unset($data[$key]);
-
-                // データを更新
-                $this->prodcut->setData($data);
-
-                // 削除されたか確認
-                if (isset($this->data[$key])) {
-                    $res_json = $this->generateResponse('sucess', 'sucess', '');
-                } else {
-                    $res_json = $this->generateResponse('failure', 'error: 削除に失敗しました', '');
-                }
-                break;
-            }
+        if (empty($data))
             $res_json = $this->generateResponse('failure', 'error: 指定されたidの商品はありませんでした', '');
+        else
+            $res_json = $this->generateResponse('sucess', 'sucess', '');
+
+        // 画像ファイルの削除
+        if ($this->deleteProductImages($data['image'])['ok'] != 'success') {
+            $res_json = $this->generateResponse('failure', 'error: 削除に失敗しました', '');
         }
 
         return $this->displayJson($request, $response, $res_json);
@@ -265,17 +203,52 @@ class ProductsController extends Controller
     // queryチェック
     public function queryCheck($query)
     {
+        // query flag
+        $query_param_flag = 1;
+
+        // 商品タイトルがある場合
+        if (!empty($query['value']['name'])) {
+            // 商品タイトルは100文字いないか
+            if (count($query['value']['name'] > 100))
+                return False;
+            $query_param_flag *= 3;
+        }
+
+        // 説明文がある場合
+        if (!empty($query['value']['description'])) {
+            // 説明文は500文字いないか
+            if (count($query['value']['description'] > 500))
+                return False;
+            $query_param_flag *= 5;
+        }
+
+        // 価格がある場合
+        if (!empty($query['value']['price'])) {
+            // 価格は0円以上か
+            if (count($query['value']['price'] >= 0))
+                return False;
+            $query_param_flag *= 7;
+        }
+
+        // imageがある場合
+        if (!empty($query['value']['image']))
+            $query_param_flag += 11;
+
 
         switch ($query['type']) {
             case "resgister":
-                return false;
+                if (!$query_param_flag % 1155 == 0)
+                    return false;
+                break;
         }
+
+        return True;
     }
 
     // idから商品を取得する
     public function getProductFromId($ids)
     {
-        $data = $this->prodcut->getData();
+        $data = $this->db_access_conector->getDataFromIds($ids);
 
         $res_data = [];
 
@@ -333,7 +306,7 @@ class ProductsController extends Controller
     // 商品のidリストを取得する
     public function getProductId()
     {
-        $products = $this->prodcut->getData();
+        $products = $this->db_access_conector->getAllData();
         $products_id = [];
 
         foreach ($products as  $value) {

@@ -29,14 +29,11 @@ return function (App $app) {
 
 
     $app->group('/api/products', function (Group $group) use ($app) {
-        // テストリンク
-        $group->get('/test', ProductsController::class . ':searchProduct');
-
         // 取得
         $group->get('/{id}', ProductsController::class . ':getProduct');
 
         // 検索
-        $group->get('', ProductsController::class . ':getProductsList');
+        $group->get('/', ProductsController::class . ':searchProduct');
 
         // 登録
         $group->post('', ProductsController::class . ':addProduct');

@@ -2,22 +2,20 @@
 
 namespace App\Controllers;
 
+require_once(__DIR__ . '/../Models/Products.php');
+
 use Psr\Container\ContainerInterface;
 use Slim\Views\PhpRenderer;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use App\Models\Products;
+use App\Models\DBConnector;
+use App\Models\DataAccessProducts;
 
 abstract class Controller
 {
-    public $prodcut;
-    public $db;
-    public $data;
+    public $db_access_conector;
     public function __construct()
     {
-        $this->prodcut = new Products();
-        $this->data = $this->prodcut->getData();
-        $this->db = new DBConnector('/db/db.db');
+        $this->db_access_conector = new DataAccessProducts();
     }
 }
-
