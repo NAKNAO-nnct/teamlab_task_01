@@ -88,7 +88,7 @@ class ProductsController extends Controller
 
         try {
             // queryチェック
-            if (!$this->queryCheck($res_json_str))
+            if (!$this->queryCheck(array('type' => 'register', 'value' => $res_json_str)))
                 throw new Exception('パラメータが不十分です．');
 
             // 画像を保存
@@ -130,7 +130,7 @@ class ProductsController extends Controller
         */
         try {
             // queryチェック
-            if (!$this->queryCheck($res_json_str))
+            if (!$this->queryCheck(array('type' => 'register', 'value' => $res_json_str)))
                 throw new Exception('パラメータが不十分です．');
             // 変更元データの取得
             $old_data = $this->getProductFromId([$id]);
