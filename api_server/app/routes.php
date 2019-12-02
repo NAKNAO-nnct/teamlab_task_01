@@ -35,6 +35,9 @@ return function (App $app) {
         // 検索
         $group->get('/', ProductsController::class . ':searchProduct');
 
+        // 全て表示
+        $group->get('', ProductsController::class . ':getProductsList');
+
         // 登録
         $group->post('', ProductsController::class . ':addProduct');
 
