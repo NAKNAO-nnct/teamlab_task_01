@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+  </head>
+
+  <body>
+    <div>
+      <br /><img id="img_src" style="display: none;" />
+      <br />
+      <label for="up_img">1MByteまで</label>
+      画像<input id="up_img" type="file" />
+      <hr />
+      Base64: <br /><textarea id="log" rows="10" cols="40"></textarea>
+      <button onclick="go()">Go!</button>
+    </div>
+    <!--
+** ATTENTION **
+canvas.toDataURL is affected by cross-domain restrictions (same-origin policy)
+-->
+    <script>
+      //  max file size[bytes]
+      const max_file_size = 1 * 1024 * 1024;
+
+      const target = document.getElementById("up_img");
+      target.addEventListener(
+        "change",
+        function(e) {
+          const file = e.target.files[0];
+          const reader = new FileReader();
+          if (file.size > max_file_size) {
+            alert("ファイルサイズが大きすぎます．");
+            target.value = "";
+            return;
+          } else {
+            reader.onload = function(e) {
+              const img = document.getElementById("img_src");
+              img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            go();
+          }
+        },
+        false
+      );
+
+      //========================================================
+      // Demo Code
+      //========================================================
+      function go() {
+        // up images
+        let up_img = document.getElementById("up_img").files[0];
+
+        // Source Image
+        var img_src = document.getElementById("img_src");
+        console.log(img_src.src);
+        // Base64 String
+        let mime_type = up_img.type;
+        alert(up_img.size / 1000 + "Kbytes");
+        document.getElementById("log").value = img_src.src;
+        // ImageToBase64(
+        //   img_src,
+        //   "image/png"
+        // );
+      }
+
+      //========================================================
+      // ImageToBase64
+      // Params
+      //   image     : HTMLImageElement | Source Image Element
+      //   mime_type : string | Source Image MIME Type
+      // Return
+      //   string | Base64 Image Data
+      //========================================================
+      function ImageToBase64(image_src, mime_type) {
+        // New Canvas
+        var canvas = document.createElement("canvas");
+        canvas.width = image_src.width;
+        canvas.height = image_src.height;
+        // Draw
+        var ctx = canvas.getContext("2d");
+        ctx.drawImage(image_src, 0, 0);
+        // Image Base64
+        return canvas.toDataURL(mime_type);
+      }
+    </script>
+  </body>
+</html>
