@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 @SpringBootApplication
@@ -21,7 +20,9 @@ public class StatisticsApplication {
 
 	//	データ保存
 	private List<Integer> ids = new ArrayList<Integer>();
+	private String products_info;
 	private List<List<Integer>> response = new ArrayList<List<Integer>>();
+	private ArrayList<String> products_info_response = new ArrayList<String>();
 
 	// スケジューラ
 	@Scheduled(fixedRate = 86400000)
@@ -34,12 +35,20 @@ public class StatisticsApplication {
 //		int_list_comparison(new_ids, new ArrayList<Integer>(Arrays.asList(1,2,4,5,6,8,9,10,11)));
 		this.response = int_list_comparison(new_ids, this.ids);
 		this.ids = new_ids;
+		this.products_info_response.add(this.products_info);
+		this.products_info_response.add(String.valueOf(products.details));
+		this.products_info = String.valueOf(products.details);
 	}
 
 	// Request
 	@RequestMapping("/")
 	List<List<Integer>> index(){
 		return this.response;
+	}
+
+	@RequestMapping("/info")
+	ArrayList<String> getInfo(){
+		return this.products_info_response;
 	}
 
 	// IDのリストを返す

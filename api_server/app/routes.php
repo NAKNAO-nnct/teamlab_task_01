@@ -47,4 +47,40 @@ return function (App $app) {
         // 削除
         $group->delete('/{id}', ProductsController::class . ':deleteProduct');
     });
+
+    // 拡張機能
+    $app->group('/statistics', function (Group $group) use ($app) {
+        $group->get('/id', function(Request $request, Response $response){
+            $api_url = 'http://127.0.0.1:8006';
+
+            $curl = curl_init();
+
+            curl_setopt($curl, CURLOPT_URL, $api_url . '/id');
+            curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'GET');
+            curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false); // 証明書の検証を行わない
+            curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);  // curl_execの結果を文字列で返す
+            $response_curl = curl_exec($curl);
+            $json = json_encode($response_curl, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+
+            $response->getBody()->write($response_curl);
+            return $response->withHeader('Content-type', 'application/json');
+        });
+
+        $group->get('/info', function(Request $request, Response $response){
+            $api_url = 'http://127.0.0.1:8006';
+
+            $curl = curl_init();
+
+            curl_setopt($curl, CURLOPT_URL, $api_url . '/info');
+            curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'GET');
+            curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false); // 証明書の検証を行わない
+            curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);  // curl_execの結果を文字列で返す
+            $response_curl = curl_exec($curl);
+            $json = json_encode($response_curl, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+
+            $response->getBody()->write($response_curl);
+            return $response->withHeader('Content-type', 'application/json');
+        });
+    });
+
 };
